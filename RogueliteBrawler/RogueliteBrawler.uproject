@@ -1,0 +1,22 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{A1148B39-48BC-755F-1547-2CA719F943C2}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "RogueliteBrawler",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		}
+	]
+}
