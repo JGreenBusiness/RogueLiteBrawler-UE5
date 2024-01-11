@@ -200,6 +200,7 @@ void APlayerCharacter::Primary()
 	{
 		Attacking = true;
 		AActor* Target = HitArray[0].GetActor();
+		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation()));
 		CurrentTargetLocation = Target->GetActorLocation();
 		ActorsToIgnore.Pop();
 		ActorsToIgnore.Add(Target);
