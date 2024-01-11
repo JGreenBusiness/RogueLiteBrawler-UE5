@@ -180,7 +180,7 @@ void APlayerCharacter::Primary()
 	float dot = FVector::DotProduct(UKismetMathLibrary::Normal(CameraDir)
 		, UKismetMathLibrary::Normal(UKismetMathLibrary::FindLookAtRotation(StartLocation,CurrentTargetLocation).Vector()));
 
-	if (dot > DuelThreshold || CurrentTargetLocation == FVector(0))
+	if (dot > DuelThreshold && CurrentTargetLocation != FVector(0))
 	{
 		return;
 	}
