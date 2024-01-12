@@ -177,29 +177,38 @@ void APlayerCharacter::Primary()
 	CameraDir.Z = 0;
 
 	FVector StartLocation = GetActorLocation();
-	float dot = FVector::DotProduct(UKismetMathLibrary::Normal(CameraDir)
+	float Dot = FVector::DotProduct(UKismetMathLibrary::Normal(CameraDir)
 		, UKismetMathLibrary::Normal(UKismetMathLibrary::FindLookAtRotation(StartLocation,CurrentTargetLocation).Vector()));
 
-	if (dot > DuelThreshold && CurrentTargetLocation != FVector(0))
+
+	float DotThreshold = DuelDotThreshold;
+	
+	if (DuelDotDistanceScalar > 1 || DuelDotDistanceScalar < 1)
+	{
+		float Dist = FVector::Distance(UKismetMathLibrary::Normal(GetActorLocation()), UKismetMathLibrary::Normal(CurrentTargetLocation));
+		FMath::Clamp(Dist, 0, 1);
+		DotThreshold += Dist * DuelDotDistanceScalar;
+		UE_LOG(LogTemp, Warning, TEXT("Dot = %f | DotThresh = %f | Dist = %f"), Dot,DotThreshold, Dist);
+	}
+
+	if (Dot > DotThreshold && CurrentTargetLocation != FVector(0))
 	{
 		return;
 	}
 
 	FVector EndLocation = GetActorLocation() + CameraDir * SphereCastDistance;
 
+	FHitResult OutHit;
 
-
-	TArray<FHitResult> HitArray;
-
-	const bool Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), StartLocation, EndLocation,
+	const bool DidHit = UKismetSystemLibrary::SphereTraceSingle(GetWorld(), StartLocation, EndLocation,
 		SphereCastRadius, UEngineTypes::ConvertToTraceType(ECC_Camera), false, 
-		ActorsToIgnore,EDrawDebugTrace::ForDuration, HitArray,
-		true, FLinearColor::Gray, FLinearColor::Green, 60.0f);
+		ActorsToIgnore,EDrawDebugTrace::ForDuration, OutHit,
+		true, FLinearColor::Gray, FLinearColor::Green, 5.0f);
 
-	if (Hit)
+	if (DidHit)
 	{
 		Attacking = true;
-		AActor* Target = HitArray[0].GetActor();
+		AActor* Target = OutHit.GetActor();
 		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation()));
 		CurrentTargetLocation = Target->GetActorLocation();
 		ActorsToIgnore.Pop();

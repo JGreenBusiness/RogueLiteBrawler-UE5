@@ -69,7 +69,10 @@ class APlayerCharacter : public ACharacter
 
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	float DuelThreshold = .5f;
+	float DuelDotThreshold = .5f;
+	
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	float DuelDotDistanceScalar = 1.5f;
 
 public:
 	// Sets default values for this character's properties
