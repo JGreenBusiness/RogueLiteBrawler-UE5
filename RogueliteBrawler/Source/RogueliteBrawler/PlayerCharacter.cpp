@@ -83,6 +83,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Debugging
 	if (CurrentTarget)
 	{
 		DrawDebugPoint(GetWorld(), CurrentTarget->GetActorLocation(), DebugTargetPointSize, FColor::Blue);
@@ -93,10 +94,12 @@ void APlayerCharacter::Tick(float DeltaTime)
 		DrawDebugPoint(GetWorld(), PossibleTarget->GetActorLocation(), DebugTargetPointSize, FColor::Green);
 	}
 
+	// Slerps player location towards Target every frame if attacking
 	if (Attacking && CurrentTarget)
 	{
 		float DistanceToTarget = FVector::Distance(GetActorLocation(), CurrentTarget->GetActorLocation());
 
+		// Player reached target destination
 		if (DistanceToTarget < AttackRadius)
 		{
 			Attacking = false;
@@ -109,48 +112,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	}
 	else
 	{
-
-		FVector CameraDir = FollowCamera->GetForwardVector();
-		CameraDir.Z = 0;
-
-		FVector StartLocation = GetActorLocation();
-		float Dot = 0;
-		float DotThreshold = DuelDotThreshold;
-
-		if (CurrentTarget)
-		{
-			Dot = FVector::DotProduct(UKismetMathLibrary::Normal(CameraDir)
-				, UKismetMathLibrary::Normal(UKismetMathLibrary::FindLookAtRotation(StartLocation, CurrentTarget->GetActorLocation()).Vector()));
-
-			if (DuelDotDistanceScalar > 1 || DuelDotDistanceScalar < 1)
-			{
-				float Dist = FVector::Distance(UKismetMathLibrary::Normal(GetActorLocation()), UKismetMathLibrary::Normal(CurrentTarget->GetActorLocation()));
-				FMath::Clamp(Dist, 0, 1);
-				DotThreshold += Dist * DuelDotDistanceScalar;
-				UE_LOG(LogTemp, Warning, TEXT("Dot = %f | DotThresh = %f | Dist = %f"), Dot, DotThreshold, Dist);
-			}
-		}
-
-		if (Dot < DotThreshold)
-		{
-			FVector EndLocation = GetActorLocation() + CameraDir * SphereCastDistance;
-
-			FHitResult OutHit;
-
-			const bool Hit = UKismetSystemLibrary::SphereTraceSingle(GetWorld(), StartLocation, EndLocation,
-				SphereCastRadius, UEngineTypes::ConvertToTraceType(ECC_Camera), false,
-				ActorsToIgnore, EDrawDebugTrace::None, OutHit,
-				true, FLinearColor::Gray, FLinearColor::Green, 0.f);
-
-			if (Hit)
-			{
-				PossibleTarget = OutHit.GetActor();
-			}
-		}
-		else
-		{
-			PossibleTarget = nullptr;
-		}
+		PossibleTarget = UpdatePossibleTarget();
 	}
 }
 
@@ -179,7 +141,6 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
-
 
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
@@ -224,7 +185,6 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Primary()
 {
-
 	if (PossibleTarget)
 	{
 		Attacking = true;
@@ -234,6 +194,62 @@ void APlayerCharacter::Primary()
 		ActorsToIgnore.Add(CurrentTarget);
 	}
 
+}
+
+AActor* APlayerCharacter::UpdatePossibleTarget()
+{
+	FVector FacingDir = FollowCamera->GetForwardVector();
+	FacingDir.Z = 0;
+
+	float FacingDotProduct = 0;
+	float DotThreshold = DuelDotThreshold;
+
+	if (CurrentTarget)
+	{
+		// Calculates how much the player is facing the current target
+		// 1 = exactly facing | 0 = perpendicular | -1 = exactly facing away
+		FacingDotProduct = FVector::DotProduct
+		(
+			UKismetMathLibrary::Normal(FacingDir),
+			UKismetMathLibrary::Normal
+			(
+				UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CurrentTarget->GetActorLocation()).Vector()
+			)
+		);
+
+		// DotThreshold is then affected by distance. The further out the player is to the target,
+		// the higher the dot threshold will be.
+		float PlayerTargetDistance = FVector::Distance
+		(
+			UKismetMathLibrary::Normal(GetActorLocation()),
+			UKismetMathLibrary::Normal(CurrentTarget->GetActorLocation())
+		);
+
+		FMath::Clamp(PlayerTargetDistance, 0, 1);
+		DotThreshold += PlayerTargetDistance * DuelDotDistanceScalar;
+	}
+
+	// Player is not facing Target
+	if (FacingDotProduct < DotThreshold)
+	{
+		FVector EndLocation = GetActorLocation() + FacingDir * SphereCastDistance;
+
+		FHitResult OutHit;
+		const bool Hit = UKismetSystemLibrary::SphereTraceSingle
+		(
+			GetWorld(), GetActorLocation(), EndLocation,SphereCastRadius,
+			UEngineTypes::ConvertToTraceType(ECC_Camera), false,ActorsToIgnore,
+			EDrawDebugTrace::None, OutHit,true, FLinearColor::Gray,
+			FLinearColor::Green, 0.f
+		);
+
+		if (Hit)
+		{
+			return OutHit.GetActor();
+		}
+	}
+
+	return nullptr;
 }
 
 FVector APlayerCharacter::MoveTowards(FVector Current, FVector Target, float MaxDelta)

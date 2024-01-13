@@ -57,8 +57,6 @@ class APlayerCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	float DebugTargetPointSize = 10;
 
-
-
 	TArray<AActor*> ActorsToIgnore;
 
 
@@ -68,17 +66,19 @@ class APlayerCharacter : public ACharacter
 	AActor* PossibleTarget = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackSpeed = 15;
+	float AttackSpeed = 5.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackRadius = 30;
+	float AttackRadius = 100.f;
 
 
+	/// <summary> Min dot product to be considered facing an enemy. </summary>
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	float DuelDotThreshold = .5f;
+	float DuelDotThreshold = .7f;
 	
+	/// <summary> How much distance affects DuelDotThreshold.</summary>
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	float DuelDotDistanceScalar = 1.5f;
+	float DuelDotDistanceScalar = 1.f;
 
 public:
 	// Sets default values for this character's properties
@@ -95,6 +95,9 @@ protected:
 	/** Called for Primary input */
 	void Primary();
 	void PrimaryRelease() {};
+
+	/// <summary> Assigns Possible target depending on Player facing.</summary>
+	AActor* UpdatePossibleTarget();
 
 	FVector MoveTowards(FVector Current, FVector Target, float MaxDelta);
 
