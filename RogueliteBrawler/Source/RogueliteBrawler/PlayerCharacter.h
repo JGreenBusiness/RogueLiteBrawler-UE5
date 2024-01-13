@@ -54,12 +54,18 @@ class APlayerCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "SphereTrace")
 	float SphereCastRadius = 5;
 
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	float DebugTargetPointSize = 10;
+
+
+
 	TArray<AActor*> ActorsToIgnore;
 
 
 	bool Attacking = false;
 
-	FVector CurrentTargetLocation = FVector(0);
+	AActor* CurrentTarget = nullptr;
+	AActor* PossibleTarget = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	float AttackSpeed = 15;

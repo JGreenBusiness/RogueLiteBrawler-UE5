@@ -13,6 +13,7 @@
 #include "InputActionValue.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -82,24 +83,75 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (Attacking)
+	if (CurrentTarget)
 	{
-		float DistanceToTarget = FVector::Distance(GetActorLocation(), CurrentTargetLocation);
+		DrawDebugPoint(GetWorld(), CurrentTarget->GetActorLocation(), DebugTargetPointSize, FColor::Blue);
+	}
+
+	if (PossibleTarget)
+	{
+		DrawDebugPoint(GetWorld(), PossibleTarget->GetActorLocation(), DebugTargetPointSize, FColor::Green);
+	}
+
+	if (Attacking && CurrentTarget)
+	{
+		float DistanceToTarget = FVector::Distance(GetActorLocation(), CurrentTarget->GetActorLocation());
 
 		if (DistanceToTarget < AttackRadius)
 		{
 			Attacking = false;
-
 		}
 
 		FVector LerpedLocation = MoveTowards(GetActorLocation(),
-			CurrentTargetLocation, (DistanceToTarget * AttackSpeed) * DeltaTime);
+			CurrentTarget->GetActorLocation(), (DistanceToTarget * AttackSpeed) * DeltaTime);
 
 		SetActorLocation(LerpedLocation);
 	}
+	else
+	{
 
+		FVector CameraDir = FollowCamera->GetForwardVector();
+		CameraDir.Z = 0;
 
-	
+		FVector StartLocation = GetActorLocation();
+		float Dot = 0;
+		float DotThreshold = DuelDotThreshold;
+
+		if (CurrentTarget)
+		{
+			Dot = FVector::DotProduct(UKismetMathLibrary::Normal(CameraDir)
+				, UKismetMathLibrary::Normal(UKismetMathLibrary::FindLookAtRotation(StartLocation, CurrentTarget->GetActorLocation()).Vector()));
+
+			if (DuelDotDistanceScalar > 1 || DuelDotDistanceScalar < 1)
+			{
+				float Dist = FVector::Distance(UKismetMathLibrary::Normal(GetActorLocation()), UKismetMathLibrary::Normal(CurrentTarget->GetActorLocation()));
+				FMath::Clamp(Dist, 0, 1);
+				DotThreshold += Dist * DuelDotDistanceScalar;
+				UE_LOG(LogTemp, Warning, TEXT("Dot = %f | DotThresh = %f | Dist = %f"), Dot, DotThreshold, Dist);
+			}
+		}
+
+		if (Dot < DotThreshold)
+		{
+			FVector EndLocation = GetActorLocation() + CameraDir * SphereCastDistance;
+
+			FHitResult OutHit;
+
+			const bool Hit = UKismetSystemLibrary::SphereTraceSingle(GetWorld(), StartLocation, EndLocation,
+				SphereCastRadius, UEngineTypes::ConvertToTraceType(ECC_Camera), false,
+				ActorsToIgnore, EDrawDebugTrace::None, OutHit,
+				true, FLinearColor::Gray, FLinearColor::Green, 0.f);
+
+			if (Hit)
+			{
+				PossibleTarget = OutHit.GetActor();
+			}
+		}
+		else
+		{
+			PossibleTarget = nullptr;
+		}
+	}
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -173,47 +225,13 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 void APlayerCharacter::Primary()
 {
 
-	FVector CameraDir = FollowCamera->GetForwardVector();
-	CameraDir.Z = 0;
-
-	FVector StartLocation = GetActorLocation();
-	float Dot = FVector::DotProduct(UKismetMathLibrary::Normal(CameraDir)
-		, UKismetMathLibrary::Normal(UKismetMathLibrary::FindLookAtRotation(StartLocation,CurrentTargetLocation).Vector()));
-
-
-	float DotThreshold = DuelDotThreshold;
-	
-	if (DuelDotDistanceScalar > 1 || DuelDotDistanceScalar < 1)
-	{
-		float Dist = FVector::Distance(UKismetMathLibrary::Normal(GetActorLocation()), UKismetMathLibrary::Normal(CurrentTargetLocation));
-		FMath::Clamp(Dist, 0, 1);
-		DotThreshold += Dist * DuelDotDistanceScalar;
-		UE_LOG(LogTemp, Warning, TEXT("Dot = %f | DotThresh = %f | Dist = %f"), Dot,DotThreshold, Dist);
-	}
-
-	if (Dot > DotThreshold && CurrentTargetLocation != FVector(0))
-	{
-		return;
-	}
-
-	FVector EndLocation = GetActorLocation() + CameraDir * SphereCastDistance;
-
-	FHitResult OutHit;
-
-	const bool DidHit = UKismetSystemLibrary::SphereTraceSingle(GetWorld(), StartLocation, EndLocation,
-		SphereCastRadius, UEngineTypes::ConvertToTraceType(ECC_Camera), false, 
-		ActorsToIgnore,EDrawDebugTrace::ForDuration, OutHit,
-		true, FLinearColor::Gray, FLinearColor::Green, 5.0f);
-
-	if (DidHit)
+	if (PossibleTarget)
 	{
 		Attacking = true;
-		AActor* Target = OutHit.GetActor();
-		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation()));
-		CurrentTargetLocation = Target->GetActorLocation();
+		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), PossibleTarget->GetActorLocation()));
+		CurrentTarget = PossibleTarget;
 		ActorsToIgnore.Pop();
-		ActorsToIgnore.Add(Target);
-
+		ActorsToIgnore.Add(CurrentTarget);
 	}
 
 }
