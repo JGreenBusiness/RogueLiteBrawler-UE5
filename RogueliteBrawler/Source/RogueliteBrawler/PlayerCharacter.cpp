@@ -95,14 +95,14 @@ void APlayerCharacter::Tick(float DeltaTime)
 	}
 
 	// Slerps player location towards Target every frame if attacking
-	if (Attacking && CurrentTarget)
+	if (bAttacking && CurrentTarget)
 	{
 		float DistanceToTarget = FVector::Distance(GetActorLocation(), CurrentTarget->GetActorLocation());
 
 		// Player reached target destination
 		if (DistanceToTarget < AttackRadius)
 		{
-			Attacking = false;
+			bAttacking = false;
 		}
 
 		FVector LerpedLocation = MoveTowards(GetActorLocation(),
@@ -144,7 +144,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
-	if (Attacking)
+	if (bAttacking)
 	{
 		return;
 	}
@@ -187,7 +187,7 @@ void APlayerCharacter::Primary()
 {
 	if (PossibleTarget)
 	{
-		Attacking = true;
+		bAttacking = true;
 		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), PossibleTarget->GetActorLocation()));
 		CurrentTarget = PossibleTarget;
 		ActorsToIgnore.Pop();

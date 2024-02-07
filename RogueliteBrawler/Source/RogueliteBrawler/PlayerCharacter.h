@@ -59,18 +59,11 @@ class APlayerCharacter : public ACharacter
 
 	TArray<AActor*> ActorsToIgnore;
 
-
-	bool Attacking = false;
-
 	AActor* CurrentTarget = nullptr;
 	AActor* PossibleTarget = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackSpeed = 5.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Attack")
 	float AttackRadius = 100.f;
-
 
 	/// <summary> Min dot product to be considered facing an enemy. </summary>
 	UPROPERTY(EditAnywhere, Category = "Attack")
@@ -115,4 +108,10 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const {return FollowCamera;}
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bAttacking = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float AttackSpeed = 5.f;
 };
