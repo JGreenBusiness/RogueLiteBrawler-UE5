@@ -94,26 +94,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		DrawDebugPoint(GetWorld(), PossibleTarget->GetActorLocation(), DebugTargetPointSize, FColor::Green);
 	}
 
-	// Slerps player location towards Target every frame if attacking
-	if (bAttacking && CurrentTarget)
-	{
-		float DistanceToTarget = FVector::Distance(GetActorLocation(), CurrentTarget->GetActorLocation());
-
-		// Player reached target destination
-		if (DistanceToTarget < AttackRadius)
-		{
-			bAttacking = false;
-		}
-
-		FVector LerpedLocation = MoveTowards(GetActorLocation(),
-			CurrentTarget->GetActorLocation(), (DistanceToTarget * AttackSpeed) * DeltaTime);
-
-		SetActorLocation(LerpedLocation);
-	}
-	else
-	{
 		PossibleTarget = UpdatePossibleTarget();
-	}
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -185,15 +166,13 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Primary()
 {
-	if (PossibleTarget)
-	{
-		bAttacking = true;
-		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), PossibleTarget->GetActorLocation()));
-		CurrentTarget = PossibleTarget;
-		ActorsToIgnore.Pop();
-		ActorsToIgnore.Add(CurrentTarget);
-	}
+	bAttacking = true;
+	GetWorldTimerManager().SetTimer(AttackTimer, this, &APlayerCharacter::PrimaryComplete, AttackSpeed);
+}
 
+void APlayerCharacter::PrimaryComplete()
+{
+	
 }
 
 AActor* APlayerCharacter::UpdatePossibleTarget()

@@ -15,6 +15,13 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+UENUM(BlueprintType)
+enum class EAttackType : uint8
+{
+	Short,
+	Far
+};
+
 UCLASS(config = Game)
 class APlayerCharacter : public ACharacter
 {
@@ -73,6 +80,7 @@ class APlayerCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	float DuelDotDistanceScalar = 1.f;
 
+
 public:
 	// Sets default values for this character's properties
 	APlayerCharacter();
@@ -88,6 +96,7 @@ protected:
 	/** Called for Primary input */
 	void Primary();
 	void PrimaryRelease() {};
+	void PrimaryComplete();
 
 	/// <summary> Assigns Possible target depending on Player facing.</summary>
 	AActor* UpdatePossibleTarget();
@@ -109,9 +118,15 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const {return FollowCamera;}
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	bool bAttacking = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	EAttackType AttackType = EAttackType::Short;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	float AttackSpeed = 5.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	FTimerHandle AttackTimer;
 };
