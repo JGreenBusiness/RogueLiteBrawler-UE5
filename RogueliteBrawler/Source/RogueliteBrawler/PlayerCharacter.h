@@ -80,6 +80,9 @@ class APlayerCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	float DuelDotDistanceScalar = 1.f;
 
+	// Lerp
+	float LerpTimeElapsed = 0;
+	FVector LerpOrigin;
 
 public:
 	// Sets default values for this character's properties
@@ -101,7 +104,7 @@ protected:
 	/// <summary> Assigns Possible target depending on Player facing.</summary>
 	AActor* UpdatePossibleTarget();
 
-	FVector MoveTowards(FVector Current, FVector Target, float MaxDelta);
+	void MoveTowards(FVector Origin, FVector Target, float Duration, float DeltaTime);
 
 protected:
 	// APawn interface
@@ -125,7 +128,7 @@ public:
 	EAttackType AttackType = EAttackType::Short;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float AttackSpeed = 5.f;
+	float AttackDuration = 1.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	FTimerHandle AttackTimer;

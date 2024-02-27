@@ -94,7 +94,15 @@ void APlayerCharacter::Tick(float DeltaTime)
 		DrawDebugPoint(GetWorld(), PossibleTarget->GetActorLocation(), DebugTargetPointSize, FColor::Green);
 	}
 
-		PossibleTarget = UpdatePossibleTarget();
+
+	if (bAttacking && CurrentTarget &&
+		FVector::Distance(CurrentTarget->GetActorLocation(), GetActorLocation()) > AttackRadius)
+	{
+		MoveTowards(LerpOrigin, CurrentTarget->GetActorLocation(),AttackDuration,DeltaTime);
+	}
+
+
+	PossibleTarget = UpdatePossibleTarget();
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -166,13 +174,20 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Primary()
 {
-	bAttacking = true;
-	GetWorldTimerManager().SetTimer(AttackTimer, this, &APlayerCharacter::PrimaryComplete, AttackSpeed);
+	if (PossibleTarget)
+	{
+		LerpTimeElapsed = 0;
+		bAttacking = true;
+		CurrentTarget = PossibleTarget;
+		LerpOrigin = GetActorLocation();
+		SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CurrentTarget->GetActorLocation()));
+		GetWorldTimerManager().SetTimer(AttackTimer, this, &APlayerCharacter::PrimaryComplete, AttackDuration);
+	}
 }
 
 void APlayerCharacter::PrimaryComplete()
 {
-	
+	bAttacking = false;
 }
 
 AActor* APlayerCharacter::UpdatePossibleTarget()
@@ -231,15 +246,22 @@ AActor* APlayerCharacter::UpdatePossibleTarget()
 	return nullptr;
 }
 
-FVector APlayerCharacter::MoveTowards(FVector Current, FVector Target, float MaxDelta)
+void APlayerCharacter::MoveTowards(FVector Origin, FVector Target, float Duration, float DeltaTime)
 {
-	FVector A = Target - Current;
-	float Mag = A.Size();
+	FVector PlayerDirection = Target - Origin;
+	PlayerDirection.Normalize();
 
-	if (Mag <= MaxDelta || Mag == 0.f)
+	FVector LerpTarget = Target - (PlayerDirection * AttackRadius);
+
+
+	if (LerpTimeElapsed < Duration )
 	{
-		return Target;
+		SetActorLocation(FMath::Lerp(Origin, LerpTarget, LerpTimeElapsed / Duration));
+		LerpTimeElapsed += DeltaTime;
 	}
-
-	return Current + A / Mag * MaxDelta;
+	else
+	{
+		LerpTimeElapsed = 0;
+	}
+	 
 }
