@@ -187,6 +187,7 @@ void APlayerCharacter::Primary()
 void APlayerCharacter::PrimaryComplete()
 {
 	bAttacking = false;
+	LerpOrigin = GetActorLocation();
 }
 
 AActor* APlayerCharacter::UpdatePossibleTarget()
@@ -236,7 +237,7 @@ AActor* APlayerCharacter::UpdatePossibleTarget()
 			FLinearColor::Green, 0.f
 		);
 
-		if (Hit)
+		if (Hit && OutHit.GetActor())
 		{
 			return OutHit.GetActor();
 		}
