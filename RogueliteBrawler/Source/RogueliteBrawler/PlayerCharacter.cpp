@@ -174,9 +174,8 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Primary()
 {
-	if (PossibleTarget)
+	if (PossibleTarget && !bAttacking)
 	{
-		LerpTimeElapsed = 0;
 		bAttacking = true;
 		CurrentTarget = PossibleTarget;
 		LerpOrigin = GetActorLocation();
@@ -254,7 +253,7 @@ void APlayerCharacter::MoveTowards(FVector Origin, FVector Target, float Duratio
 	FVector LerpTarget = Target - (PlayerDirection * AttackRadius);
 
 
-	if (LerpTimeElapsed < Duration )
+	if (LerpTimeElapsed < Duration)
 	{
 		SetActorLocation(FMath::Lerp(Origin, LerpTarget, LerpTimeElapsed / Duration));
 		LerpTimeElapsed += DeltaTime;
